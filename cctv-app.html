@@ -22,7 +22,7 @@
   #tagline { font-size: 11px; color: var(--muted); margin-bottom: 32px; letter-spacing: 1px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; }
   .section-title { font-size: 11px; font-weight: 600; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
-  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px; }
+  .btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
   .btn:active { transform: scale(0.97); }
   .btn-primary { background: var(--accent); color: #000; }
   .btn-primary:hover { background: #00c853; }
@@ -39,11 +39,11 @@
   .status-dot.live { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.5s infinite; }
   .status-dot.connected { background: #29b6f6; box-shadow: 0 0 8px #29b6f6; }
   .status-dot.error { background: var(--danger); }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .status-line { font-size: 12px; color: var(--muted); margin-top: 12px; display: flex; align-items: center; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .status-line { font-size: 12px; color: var(--muted); margin-top: 12px; display: flex; align-items: center; min-height: 20px; }
   #video-container { display: none; position: fixed; inset: 0; background: #000; z-index: 100; flex-direction: column; }
   #video-container.active { display: flex; }
-  video { width: 100%; height: 100%; object-fit: cover; flex: 1; }
+  video { width: 100%; height: 100%; object-fit: cover; flex: 1; background: #000; }
   #cam-hud { position: absolute; top: 0; left: 0; right: 0; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); }
   #cam-hud-left { display: flex; align-items: center; gap: 10px; }
   #rec-badge { background: var(--danger); color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; }
@@ -58,10 +58,13 @@
   .input-row input::placeholder { font-family: -apple-system, sans-serif; font-weight: 400; letter-spacing: 0; font-size: 13px; color: var(--muted); }
   #viewer-video-wrap { display: none; width: 100%; margin-top: 16px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); aspect-ratio: 16/9; background: #000; position: relative; }
   #viewer-video-wrap.active { display: block; }
-  #viewer-video { width: 100%; height: 100%; object-fit: cover; }
+  #viewer-video { width: 100%; height: 100%; object-fit: cover; display: block; }
   #viewer-overlay { position: absolute; top: 8px; left: 8px; font-size: 10px; color: rgba(255,255,255,0.7); background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 10px; display: flex; align-items: center; gap: 4px; }
   .hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
   .wake-notice { font-size: 10px; color: var(--muted); background: rgba(0,230,118,0.05); border: 1px solid rgba(0,230,118,0.15); border-radius: 6px; padding: 8px 12px; margin-top: 12px; line-height: 1.5; }
+  #tap-to-play { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); cursor: pointer; }
+  #tap-to-play.show { display: flex; }
+  #tap-to-play span { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; }
   #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: var(--text); padding: 10px 20px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border); opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
@@ -97,8 +100,7 @@
   <hr class="divider">
 
   <div class="section-title">👁 Watch (any device)</div>
-
-  <p class="hint" style="margin-bottom:0;">Enter a camera code to watch the live feed.</p>
+  <p class="hint" style="margin-bottom:0;">Enter the camera code to watch the live feed.</p>
 
   <div class="input-row">
     <input id="view-code" type="text" maxlength="6" placeholder="6-letter code" autocomplete="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toUpperCase()">
@@ -106,10 +108,9 @@
   </div>
 
   <div id="viewer-video-wrap">
-    <video id="viewer-video" autoplay playsinline></video>
-    <div id="viewer-overlay">
-      <span class="status-dot connected"></span> LIVE
-    </div>
+    <video id="viewer-video" autoplay playsinline muted></video>
+    <div id="viewer-overlay"><span class="status-dot connected"></span> LIVE</div>
+    <div id="tap-to-play" onclick="forcePlay()"><span>▶ Tap to play</span></div>
   </div>
 
   <div class="status-line" id="viewer-status" style="display:none;">
@@ -144,21 +145,19 @@
   let viewers = 0;
   let wakeLock = null;
   let viewerPeer = null;
+  let currentRemoteStream = null;
 
-  // PeerJS config — using peerjs.com cloud (more reliable than 0.peerjs.com)
-  function peerConfig() {
-    return {
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' }
-        ],
-        iceCandidatePoolSize: 10
-      }
-    };
-  }
+  const ICE = {
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' }
+      ],
+      iceCandidatePoolSize: 10
+    }
+  };
 
   function toast(msg) {
     const t = document.getElementById('toast');
@@ -169,9 +168,9 @@
 
   function genCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+    let c = '';
+    for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+    return c;
   }
 
   async function acquireWakeLock() {
@@ -179,9 +178,11 @@
       try {
         wakeLock = await navigator.wakeLock.request('screen');
         wakeLock.addEventListener('release', () => { if (localStream) acquireWakeLock(); });
-      } catch (e) {}
+      } catch(e) {}
     }
   }
+
+  // ── BROADCASTER ──────────────────────────────────────────
 
   async function startBroadcast() {
     const btn = document.getElementById('start-cam-btn');
@@ -193,7 +194,7 @@
         video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true
       });
-    } catch (e) {
+    } catch(e) {
       toast('Camera permission denied');
       btn.disabled = false;
       document.getElementById('broadcast-text').textContent = 'Tap to go live';
@@ -208,47 +209,46 @@
     document.getElementById('peer-id-display').textContent = code;
     document.getElementById('hud-code').textContent = code;
     document.getElementById('peer-id-section').style.display = 'block';
-
     document.getElementById('broadcast-text').textContent = 'Connecting to relay…';
 
-    peer = new Peer(code, peerConfig());
+    peer = new Peer('cam-' + code, ICE);
 
-    peer.on('open', (id) => {
+    peer.on('open', () => {
       document.getElementById('broadcast-dot').classList.add('live');
       document.getElementById('broadcast-text').textContent = 'Live — waiting for viewers';
       btn.style.display = 'none';
       toast('Camera is live! Share your code.');
     });
 
-    peer.on('call', (call) => {
-      // Answer with our stream — viewer will receive it
-      call.answer(localStream);
-      viewers++;
-      updateViewerCount();
-      document.getElementById('broadcast-text').textContent = `Live — ${viewers} viewer${viewers !== 1 ? 's' : ''}`;
-      toast('Viewer connected!');
+    // Viewer connects via data channel and sends "watch" message
+    // Broadcaster then calls the viewer back with the real stream
+    peer.on('connection', (conn) => {
+      conn.on('data', (data) => {
+        if (data === 'watch') {
+          // Call the viewer back — this way WE initiate the media call
+          // so the video/audio tracks are always properly negotiated
+          const call = peer.call(conn.peer, localStream);
+          viewers++;
+          updateViewerCount();
+          toast('Viewer connected!');
 
-      call.on('close', () => {
-        viewers = Math.max(0, viewers - 1);
-        updateViewerCount();
-        document.getElementById('broadcast-text').textContent = viewers > 0
-          ? `Live — ${viewers} viewer${viewers !== 1 ? 's' : ''}`
-          : 'Live — waiting for viewers';
-      });
-      call.on('error', () => {
-        viewers = Math.max(0, viewers - 1);
-        updateViewerCount();
+          call.on('close', () => {
+            viewers = Math.max(0, viewers - 1);
+            updateViewerCount();
+          });
+          call.on('error', () => {
+            viewers = Math.max(0, viewers - 1);
+            updateViewerCount();
+          });
+        }
       });
     });
 
     peer.on('error', (e) => {
-      console.error('Peer error:', e);
-      if (e.type === 'unavailable-id') {
-        peer.destroy();
-        startBroadcast();
-      } else {
-        document.getElementById('broadcast-text').textContent = 'Connection error — retrying…';
-        setTimeout(() => { if (peer) peer.reconnect(); }, 2000);
+      if (e.type === 'unavailable-id') { peer.destroy(); startBroadcast(); }
+      else {
+        document.getElementById('broadcast-text').textContent = 'Relay error — retrying…';
+        setTimeout(() => { if (peer && !peer.destroyed) peer.reconnect(); }, 2000);
       }
     });
 
@@ -259,34 +259,29 @@
   }
 
   function updateViewerCount() {
-    document.getElementById('viewer-count-text').textContent =
-      `${viewers} viewer${viewers !== 1 ? 's' : ''}`;
+    const v = viewers;
+    document.getElementById('viewer-count-text').textContent = `${v} viewer${v !== 1 ? 's' : ''}`;
+    document.getElementById('broadcast-text').textContent =
+      v > 0 ? `Live — ${v} viewer${v !== 1 ? 's' : ''}` : 'Live — waiting for viewers';
   }
 
   async function flipCamera() {
     facingMode = facingMode === 'environment' ? 'user' : 'environment';
     if (!localStream) return;
-
     const newStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: true
     });
-
-    // Replace tracks for all active peer connections
     if (peer) {
-      Object.values(peer.connections).forEach(conns => {
-        conns.forEach(conn => {
-          if (conn.peerConnection) {
-            newStream.getTracks().forEach(track => {
-              const sender = conn.peerConnection.getSenders()
-                .find(s => s.track && s.track.kind === track.kind);
-              if (sender) sender.replaceTrack(track);
-            });
-          }
-        });
-      });
+      Object.values(peer.connections).forEach(conns => conns.forEach(conn => {
+        if (conn.peerConnection) {
+          newStream.getTracks().forEach(track => {
+            const sender = conn.peerConnection.getSenders().find(s => s.track?.kind === track.kind);
+            if (sender) sender.replaceTrack(track);
+          });
+        }
+      }));
     }
-
     localStream.getTracks().forEach(t => t.stop());
     localStream = newStream;
     document.getElementById('local-video').srcObject = localStream;
@@ -300,7 +295,7 @@
     document.getElementById('video-container').classList.remove('active');
     const btn = document.getElementById('start-cam-btn');
     btn.disabled = false; btn.style.display = '';
-    document.getElementById('broadcast-dot').classList.remove('live');
+    document.getElementById('broadcast-dot').className = 'status-dot';
     document.getElementById('broadcast-text').textContent = 'Tap to go live';
     document.getElementById('peer-id-section').style.display = 'none';
     toast('Broadcast stopped');
@@ -311,77 +306,85 @@
     navigator.clipboard.writeText(code).then(() => toast('Code copied!'));
   }
 
+  // ── VIEWER ───────────────────────────────────────────────
+
   function setViewerStatus(dotClass, text) {
-    const dot = document.getElementById('viewer-dot');
-    dot.className = 'status-dot ' + dotClass;
+    document.getElementById('viewer-dot').className = 'status-dot ' + dotClass;
     document.getElementById('viewer-text').textContent = text;
     document.getElementById('viewer-status').style.display = 'flex';
   }
 
   async function startViewing() {
-    const code = document.getElementById('view-code').value.trim().toUpperCase();
-    if (code.length < 4) { toast('Enter a valid code'); return; }
+    const raw = document.getElementById('view-code').value.trim().toUpperCase();
+    if (raw.length < 4) { toast('Enter a valid code'); return; }
 
-    setViewerStatus('', 'Connecting to relay…');
+    setViewerStatus('', 'Connecting…');
     if (viewerPeer) { viewerPeer.destroy(); viewerPeer = null; }
 
-    viewerPeer = new Peer(peerConfig());
+    // Viewer gets a random peer ID
+    viewerPeer = new Peer(ICE);
 
-    viewerPeer.on('open', () => {
+    viewerPeer.on('open', (myId) => {
       setViewerStatus('', 'Reaching camera…');
 
-      // KEY FIX: call with the local stream if broadcasting,
-      // otherwise use a silent audio track so the call has a valid offer
-      let streamToSend;
-      if (localStream) {
-        streamToSend = localStream;
-      } else {
-        // Create a silent audio track — needed so PeerJS can make a valid SDP offer
-        const ctx = new AudioContext();
-        const dest = ctx.createMediaStreamDestination();
-        streamToSend = dest.stream;
-      }
-
-      const call = viewerPeer.call(code, streamToSend);
-
-      if (!call) {
-        setViewerStatus('error', 'Failed to initiate call');
-        toast('Could not reach camera — is it live?');
-        return;
-      }
-
-      // Set a timeout — if no stream in 10s, likely the code is wrong or cam is offline
       const timeout = setTimeout(() => {
-        setViewerStatus('error', 'No response — check the code');
-        toast('Camera not responding');
-      }, 10000);
+        setViewerStatus('error', 'No response — is the camera live?');
+      }, 12000);
 
-      call.on('stream', (remoteStream) => {
-        clearTimeout(timeout);
-        const vid = document.getElementById('viewer-video');
-        vid.srcObject = remoteStream;
-        vid.play().catch(() => {});
-        document.getElementById('viewer-video-wrap').classList.add('active');
-        setViewerStatus('connected', 'Watching live feed');
-        toast('Connected!');
+      // Step 1: open a data connection to the broadcaster
+      const conn = viewerPeer.connect('cam-' + raw, { reliable: true });
+
+      conn.on('open', () => {
+        // Step 2: tell the broadcaster "I want to watch"
+        conn.send('watch');
       });
 
-      call.on('close', () => {
+      conn.on('error', () => {
         clearTimeout(timeout);
-        setViewerStatus('error', 'Stream ended');
-        document.getElementById('viewer-video-wrap').classList.remove('active');
+        setViewerStatus('error', 'Camera not found — check the code');
+        toast('Camera not found');
       });
 
-      call.on('error', (e) => {
+      // Step 3: broadcaster will call US back with the real stream
+      viewerPeer.on('call', (call) => {
         clearTimeout(timeout);
-        console.error('Call error:', e);
-        setViewerStatus('error', 'Connection failed');
-        toast('Connection failed — try again');
+        // Answer with no stream (we're receive-only)
+        call.answer();
+
+        call.on('stream', (remoteStream) => {
+          currentRemoteStream = remoteStream;
+          const vid = document.getElementById('viewer-video');
+
+          vid.srcObject = remoteStream;
+
+          // Try to play; if blocked show tap-to-play button
+          const playPromise = vid.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              document.getElementById('tap-to-play').classList.remove('show');
+            }).catch(() => {
+              // Autoplay blocked — show tap button
+              document.getElementById('tap-to-play').classList.add('show');
+            });
+          }
+
+          document.getElementById('viewer-video-wrap').classList.add('active');
+          setViewerStatus('connected', 'Watching live feed');
+          toast('Connected!');
+        });
+
+        call.on('close', () => {
+          setViewerStatus('error', 'Stream ended');
+          document.getElementById('viewer-video-wrap').classList.remove('active');
+        });
+
+        call.on('error', () => {
+          setViewerStatus('error', 'Stream error');
+        });
       });
     });
 
     viewerPeer.on('error', (e) => {
-      console.error('Viewer peer error:', e);
       const msg = e.type === 'peer-unavailable'
         ? 'Camera not found — is it live?'
         : 'Connection error — try again';
@@ -390,10 +393,21 @@
     });
   }
 
+  function forcePlay() {
+    const vid = document.getElementById('viewer-video');
+    vid.muted = false;
+    vid.play().then(() => {
+      document.getElementById('tap-to-play').classList.remove('show');
+    }).catch(() => {
+      vid.muted = true;
+      vid.play().then(() => {
+        document.getElementById('tap-to-play').classList.remove('show');
+      });
+    });
+  }
+
   document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible' && localStream && !wakeLock) {
-      await acquireWakeLock();
-    }
+    if (document.visibilityState === 'visible' && localStream && !wakeLock) acquireWakeLock();
   });
 </script>
 </body>
